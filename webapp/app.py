@@ -165,6 +165,10 @@ app.layout = html.Div(style={
                 tooltip={"placement": "bottom", "always_visible": True}),
         ]),
 
+        # Info panel
+        html.Hr(style={"borderColor": "#30363d", "margin": "16px 0 10px 0"}),
+        html.Div(id="info-panel"),
+
     ]),
 
     # Main graph area
@@ -251,6 +255,241 @@ def toggle_play(_p, _s, is_disabled):
 # Speed slider → interval
 @app.callback(Output("interval", "interval"), Input("speed", "value"))
 def set_speed(ms): return ms or 80
+
+
+# Info panel content per animation type
+_INFO = {
+    "graph2d": {
+        "title": "2D Animated Graph — f(x, t)",
+        "desc": (
+            "Plot any curve y = f(x, t) where x is the spatial axis "
+            "and t advances each frame. At 30 fps, frame 60 gives t = 2.0. "
+            "The curve redraws every frame, animating anything that depends on t."
+        ),
+        "sections": [
+            ("Wave equation building blocks", [
+                ("Term", "Controls", "Example"),
+                ("A * sin(...)", "Amplitude — peak height", "2 * sin(x) doubles height"),
+                ("sin(k*x)", "Spatial frequency — peaks per unit", "sin(3*x) is 3× denser"),
+                ("sin(x - v*t)", "Travelling right at speed v", "sin(x - 2*t)"),
+                ("sin(x + v*t)", "Travelling left at speed v", "sin(x + t)"),
+                ("sin(x) * cos(t)", "Standing wave — nodes fixed", "nodes at multiples of π"),
+                ("* exp(-a*x**2)", "Gaussian envelope — localises wave", "sin(x+t) * exp(-0.1*x**2)"),
+                ("f(x) + g(x)", "Superposition — interference / beats", "sin(x+t) + sin(x+1.05*t)"),
+            ]),
+            ("Example equations", [
+                ("Equation", "What you see"),
+                ("sin(x + t)", "Simple leftward travelling wave"),
+                ("sin(x) * cos(t)", "Standing wave — nodes stay fixed"),
+                ("sin(x + t) * exp(-0.1*x**2)", "Travelling wave with Gaussian decay"),
+                ("cos(3*x - 2*t) + 0.5*sin(5*x + t)", "Two waves — beating pattern"),
+                ("sin(x*t) / (1 + x**2)", "Frequency chirp — rate grows with time"),
+                ("exp(-0.05*(x - 3*t)**2)", "Gaussian pulse travelling right at speed 3"),
+                ("sin(x + t) + sin(x + 1.05*t)", "Beats — two close frequencies interfering"),
+                ("tanh(x - 2*t)", "Kink / soliton — smooth step front moving right"),
+            ]),
+        ],
+    },
+    "graph3d": {
+        "title": "3D Surface Explorer — f(x, y)",
+        "desc": (
+            "Animate an orbital 360° rotation of any surface f(x, y). "
+            "x and y form the input plane; height z = f(x, y) is the output. "
+            "Color also encodes height via the colorbar."
+        ),
+        "sections": [
+            ("Surface features", [
+                ("Feature", "What it means"),
+                ("Peak (local max)", "∂f/∂x = 0 and ∂f/∂y = 0 — curves downward in all directions"),
+                ("Valley (local min)", "Same conditions, curves upward"),
+                ("Saddle point", "Curves up in one direction, down in another"),
+                ("Flat ridge", "Constant along one axis, varying along the other"),
+                ("Oscillating", "sin(x)*cos(y) — periodic in both directions"),
+                ("Decaying amplitude", "exp(-(x²+y²)) shrinks surface toward zero from origin"),
+            ]),
+            ("Example equations", [
+                ("Equation", "What you see", "Best range"),
+                ("sin(sqrt(x**2 + y**2))", "Circular ripples from origin", "−6 to 6"),
+                ("exp(-0.1*(x**2+y**2)) * cos(x+y)", "Gaussian-modulated diagonal wave", "−5 to 5"),
+                ("sin(x) * cos(y)", "Saddle-wave egg-carton grid", "−4 to 4"),
+                ("x * exp(-x**2 - y**2)", "Ricker wavelet — positive/negative ridge", "−3 to 3"),
+                ("(1 - 2*(x**2+y**2)) * exp(-(x**2+y**2))", "Mexican hat / Laplacian of Gaussian", "−3 to 3"),
+                ("sin(x**2 + y**2) / (x**2 + y**2 + 1)", "Sinc-like decay from origin", "−5 to 5"),
+            ]),
+        ],
+    },
+    "complex": {
+        "title": "Complex Plane — Domain Coloring",
+        "desc": (
+            "Visualize complex functions f(z) where every pixel is colored by "
+            "phase (hue) and magnitude (brightness rings). Include t in your equation to animate."
+        ),
+        "sections": [
+            ("How to read the colors", [
+                ("Visual feature", "What it encodes", "Formula"),
+                ("Hue (color wheel)", "Phase / argument of output", "arg(f(z)) in [−π, π]"),
+                ("Brightness rings", "Magnitude (log scale) — each ring = ×e", "log(1 + |f(z)|)"),
+                ("Dark pinch-points", "Zeros — f(z) = 0", "All colors converge inward"),
+                ("Bright chaos", "Poles — |f(z)| → ∞", "Colors cycle rapidly outward"),
+                ("Color cycles per loop", "Winding number / order", "One full cycle = order-1 zero or pole"),
+            ]),
+            ("Phase color wheel", [
+                ("Color", "Phase"),
+                ("Red", "0"),
+                ("Yellow", "π/3"),
+                ("Green", "2π/3"),
+                ("Cyan", "±π"),
+                ("Blue", "−2π/3"),
+                ("Magenta", "−π/3"),
+            ]),
+            ("Example equations", [
+                ("Equation", "What you see"),
+                ("z**2", "Two sectors; zero of order 2 at origin"),
+                ("z**3 - 1", "Three zeros (cube roots of unity) in a triangle"),
+                ("(z**2 - 1) / (z**2 + 1)", "Two zeros at ±1, two poles at ±i"),
+                ("sin(z)", "Infinitely many zeros along real axis"),
+                ("1 / z", "Single pole at origin — colors spiral outward"),
+                ("exp(z)", "No zeros, no poles — magnitude grows rightward"),
+                ("(z - 1j) / (z + 1j)", "Möbius transform — one zero, one pole"),
+                ("z * exp(-abs(z)**2 / 4)", "Zero at origin with Gaussian decay"),
+            ]),
+        ],
+    },
+    "riemann.zeros": {
+        "title": "Riemann ζ — Zeros on Critical Line",
+        "desc": (
+            "Traces the path of ζ(½+it) in the complex plane as t grows. "
+            "Every time the orange dot crosses the origin (white cross), "
+            "a nontrivial zero of ζ(s) occurs. Red dashed lines on the right "
+            "panel mark the zero locations."
+        ),
+        "sections": [
+            ("What is the Riemann Zeta Function?", [
+                ("Property", "Details"),
+                ("Definition (Re(s) > 1)", "ζ(s) = 1 + 1/2ˢ + 1/3ˢ + … = Σ 1/nˢ"),
+                ("Analytic continuation", "Extends to all ℂ except s = 1 (pole)"),
+                ("Trivial zeros", "Negative even integers: s = −2, −4, −6, …"),
+                ("Nontrivial zeros", "All known ones lie on Re(s) = ½ (critical line)"),
+                ("Riemann Hypothesis", "All nontrivial zeros have Re(s) = ½ — unproven since 1859"),
+                ("Millennium Prize", "$1 million — unsolved for 165 years"),
+            ]),
+            ("Known nontrivial zeros (Im part)", [
+                ("#", "Imaginary part"),
+                ("1", "14.135"),
+                ("2", "21.022"),
+                ("3", "25.011"),
+                ("4", "30.425"),
+                ("5", "32.935"),
+                ("6", "37.586"),
+                ("7", "40.919"),
+                ("8", "43.327"),
+            ]),
+        ],
+    },
+    "riemann.critical_strip": {
+        "title": "Riemann ζ — Critical Strip Heatmap",
+        "desc": (
+            "Shows log(1+|ζ(s)|) and arg(ζ(s)) as heatmaps over the critical strip "
+            "0 < Re(s) < 1. The cyan dashed line marks Re(s) = ½ — the critical line "
+            "where the Riemann Hypothesis predicts all nontrivial zeros lie."
+        ),
+        "sections": [
+            ("Reading the heatmaps", [
+                ("Panel", "What it shows"),
+                ("Left — log magnitude", "Dark = |ζ(s)| near 0 (zeros), bright = large magnitude"),
+                ("Right — phase (HSV)", "Phase cycles wrap around ±π; zeros are phase vortices"),
+                ("Cyan dashed line", "Critical line Re(s) = ½"),
+                ("Horizontal bands", "Zeros appear as dark spots on the left, phase singularities on the right"),
+            ]),
+            ("What is the critical strip?", [
+                ("Region", "Significance"),
+                ("Re(s) < 0", "Trivial zeros at even negative integers; ζ is well-understood"),
+                ("0 < Re(s) < 1", "Critical strip — all nontrivial zeros live here"),
+                ("Re(s) = ½", "Critical line — Riemann conjectured all zeros are here"),
+                ("Re(s) > 1", "ζ(s) = Σ 1/nˢ converges; no zeros exist here"),
+            ]),
+        ],
+    },
+    "riemann.winding": {
+        "title": "Riemann ζ — Winding Number (Argument Principle)",
+        "desc": (
+            "Applies the Argument Principle: the number of zeros of ζ(s) inside a "
+            "rectangular contour C equals the winding number of ζ(C) around the origin. "
+            "Red × marks are zeros inside the contour; grey × are outside."
+        ),
+        "sections": [
+            ("The Argument Principle", [
+                ("Concept", "Details"),
+                ("Formula", "N(zeros) = (1/2π) × total change in arg(ζ(C))"),
+                ("Winding number", "How many times ζ(C) loops around the origin"),
+                ("Each red ×", "A nontrivial zero of ζ(s) on the critical line (Im part shown)"),
+                ("Orange curve (left)", "The rectangular contour C in the s-plane"),
+                ("Orange curve (right)", "Image ζ(C) in the ζ-plane; loops = zeros enclosed"),
+                ("White cross", "Origin in ζ-plane — loops counted around this point"),
+            ]),
+            ("How to use", [
+                ("Control", "Effect"),
+                ("Winding contour top", "Raise Im(s) max to enclose more zeros"),
+                ("Zeros to find", "How many zeros are computed and shown as ×"),
+                ("Winding ≈ N", "Should equal the number of red × enclosed by contour"),
+            ]),
+        ],
+    },
+}
+
+
+def _info_table(rows):
+    header = rows[0]
+    body = rows[1:]
+    th_style = {"background": "#21262d", "color": "#8b949e", "padding": "5px 8px",
+                "fontSize": "11px", "fontWeight": "600", "textAlign": "left",
+                "borderBottom": "1px solid #30363d"}
+    td_style = {"padding": "5px 8px", "color": "#c9d1d9", "fontSize": "12px",
+                "borderBottom": "1px solid #21262d", "verticalAlign": "top"}
+    td_code_style = {**td_style, "fontFamily": "monospace", "color": "#7ee787"}
+    return html.Table(style={"width": "100%", "borderCollapse": "collapse", "marginTop": "6px"},
+        children=[
+            html.Thead(html.Tr([html.Th(h, style=th_style) for h in header])),
+            html.Tbody([
+                html.Tr([
+                    html.Td(cell, style=(td_code_style if j == 0 and "*" not in cell
+                                        and any(c in cell for c in ("(", "/", "**", "=", "ζ", "∂", "Σ"))
+                                        else td_style))
+                    for j, cell in enumerate(row)
+                ])
+                for row in body
+            ]),
+        ]
+    )
+
+
+@app.callback(Output("info-panel", "children"), Input("anim-type", "value"))
+def update_info(anim):
+    info = _INFO.get(anim)
+    if not info:
+        return []
+
+    card_style = {"background": "#161b22", "border": "1px solid #30363d",
+                  "borderRadius": "8px", "padding": "12px 14px", "marginBottom": "10px"}
+    h2_style = {"margin": "0 0 8px 0", "fontSize": "11px", "fontWeight": "700",
+                "color": "#58a6ff", "textTransform": "uppercase", "letterSpacing": "0.07em"}
+    p_style = {"margin": "0", "color": "#8b949e", "fontSize": "12px", "lineHeight": "1.6"}
+
+    children = [
+        html.Div(style=card_style, children=[
+            html.H2(info["title"], style={"margin": "0 0 6px 0", "fontSize": "13px",
+                                          "fontWeight": "700", "color": "#e6edf3"}),
+            html.P(info["desc"], style=p_style),
+        ]),
+    ]
+
+    for section_title, rows in info["sections"]:
+        children.append(html.Div(style=card_style, children=[
+            html.H2(section_title, style=h2_style),
+            _info_table(rows),
+        ]))
+
+    return children
 
 
 # Interval → advance t
