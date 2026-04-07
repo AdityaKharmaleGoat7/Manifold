@@ -1,0 +1,9 @@
+Next Plan: Optimise Root Finding of the Zeta Function
+
+- Improve how we find the zeros of the Riemann zeta function
+- Look at the current root-finding method and see where it's slow
+- Try better algorithms (e.g. Newton's method, Brent's method) for faster convergence
+- Use smarter initial guesses based on known zero spacing
+- Cache or reuse previous results to avoid repeated work
+- Profile the code to find bottlenecks
+- Test accuracy and speed against the current approach
