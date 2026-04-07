@@ -1,9 +1,23 @@
-# Manifold
+<p align="center">
+  <img src="assets/logo.png" width="120" alt="Manifold Logo"/>
+</p>
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+<h1 align="center">Manifold</h1>
 
-A mathematical animation toolkit for visualizing complex functions, 2D/3D graphs, and Riemann Hypothesis structures. Built for interactive Jupyter notebooks and a live web app.
+<p align="center">
+  <em>Own the space</em>
+</p>
+
+<p align="center">
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"/></a>
+</p>
+
+<p align="center">
+  A mathematical animation toolkit for visualizing complex functions, 2D/3D graphs, and Riemann Hypothesis structures. Built for interactive Jupyter notebooks and a live web app.
+</p>
+
+<br>
 
 **Key features:**
 - Safe equation input via AST-whitelisted parser (no eval vulnerabilities)
