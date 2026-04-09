@@ -153,6 +153,11 @@ _INPUT = {"width": "100%", "boxSizing": "border-box",
           "border": "1px solid #30363d", "borderRadius": "6px",
           "padding": "8px 10px", "fontFamily": "monospace", "fontSize": "13px",
           "marginBottom": "4px"}
+_MAT_INPUT = {"width": "100%", "boxSizing": "border-box", "textAlign": "center",
+              "background": "#0d1117", "color": "#e6edf3",
+              "border": "1px solid #30363d", "borderRadius": "6px",
+              "padding": "10px 4px", "fontFamily": "monospace", "fontSize": "15px",
+              "fontWeight": "600"}
 
 # ── Equation presets per mode ─────────────────────────────────────────────────
 _PRESETS = {
@@ -275,11 +280,59 @@ app.layout = html.Div(style={
             # ── Equation ──────────────────────────────────────────────────────
             html.Div(id="eq-section", style=_CARD, children=[
                 html.Div("Equation", id="eq-title", style=_SEC),
-                dcc.Input(id="equation", type="text", debounce=True,
-                    value="sin(x + t) * exp(-0.1 * x**2)",
-                    placeholder="e.g. sin(x + t) * exp(-0.1 * x**2)",
-                    style=_INPUT,
-                ),
+                html.Div(id="eq-input-wrapper", children=[
+                    dcc.Input(id="equation", type="text", debounce=True,
+                        value="sin(x + t) * exp(-0.1 * x**2)",
+                        placeholder="e.g. sin(x + t) * exp(-0.1 * x**2)",
+                        style=_INPUT,
+                    ),
+                ]),
+                html.Div(id="matrix-grid-2d", style={"display": "none"}, children=[
+                    html.Div(style={
+                        "display": "grid", "gridTemplateColumns": "1fr 1fr",
+                        "gap": "6px", "maxWidth": "180px", "margin": "0 auto 6px auto",
+                    }, children=[
+                        dcc.Input(id="mat-00", type="number", value=1, step=0.1,
+                                  debounce=True, style=_MAT_INPUT),
+                        dcc.Input(id="mat-01", type="number", value=0, step=0.1,
+                                  debounce=True, style=_MAT_INPUT),
+                        dcc.Input(id="mat-10", type="number", value=0, step=0.1,
+                                  debounce=True, style=_MAT_INPUT),
+                        dcc.Input(id="mat-11", type="number", value=1, step=0.1,
+                                  debounce=True, style=_MAT_INPUT),
+                    ]),
+                    html.Div(style={
+                        "textAlign": "center", "fontSize": "10px", "color": "#484f58",
+                    }, children="[ a  b ]  /  [ c  d ]"),
+                ]),
+                html.Div(id="matrix-grid-3d", style={"display": "none"}, children=[
+                    html.Div(style={
+                        "display": "grid", "gridTemplateColumns": "1fr 1fr 1fr",
+                        "gap": "5px", "maxWidth": "240px", "margin": "0 auto 6px auto",
+                    }, children=[
+                        dcc.Input(id="mat3-00", type="number", value=1, step=0.1,
+                                  debounce=True, style=_MAT_INPUT),
+                        dcc.Input(id="mat3-01", type="number", value=0, step=0.1,
+                                  debounce=True, style=_MAT_INPUT),
+                        dcc.Input(id="mat3-02", type="number", value=0, step=0.1,
+                                  debounce=True, style=_MAT_INPUT),
+                        dcc.Input(id="mat3-10", type="number", value=0, step=0.1,
+                                  debounce=True, style=_MAT_INPUT),
+                        dcc.Input(id="mat3-11", type="number", value=1, step=0.1,
+                                  debounce=True, style=_MAT_INPUT),
+                        dcc.Input(id="mat3-12", type="number", value=0, step=0.1,
+                                  debounce=True, style=_MAT_INPUT),
+                        dcc.Input(id="mat3-20", type="number", value=0, step=0.1,
+                                  debounce=True, style=_MAT_INPUT),
+                        dcc.Input(id="mat3-21", type="number", value=0, step=0.1,
+                                  debounce=True, style=_MAT_INPUT),
+                        dcc.Input(id="mat3-22", type="number", value=1, step=0.1,
+                                  debounce=True, style=_MAT_INPUT),
+                    ]),
+                    html.Div(style={
+                        "textAlign": "center", "fontSize": "10px", "color": "#484f58",
+                    }, children="3x3 matrix  —  rows top to bottom"),
+                ]),
                 html.Div(id="eq-status", style={"fontSize": "11px", "color": "#8b949e"},
                          children="Press Enter to apply"),
                 html.Div("Use x, t for 2D  |  x, y for 3D  |  z, t for complex",
@@ -499,16 +552,30 @@ def show_controls(anim):
     return eq, xrange, yrange, cplx, t, cmap, riemann, anim_s, point, linear
 
 
-# Update eq section labels for linear transform mode
+# Update eq section labels and toggle text input vs matrix grid
 @app.callback(
     Output("eq-title", "children"),
     Output("eq-hint",  "children"),
+    Output("eq-input-wrapper", "style"),
+    Output("matrix-grid-2d", "style"),
+    Output("matrix-grid-3d", "style"),
     Input("anim-type", "value"),
+    Input("linear-dim", "value"),
 )
-def update_eq_labels(anim):
+def update_eq_labels(anim, dim):
+    hide = {"display": "none"}
+    show_text = {"display": "block"}
     if anim == "linear_transform":
-        return "Transformation Matrix", "Rows separated by ;  e.g. 1, 0; 0, 1"
-    return "Equation", "Use x, t for 2D  |  x, y for 3D  |  z, t for complex"
+        if (dim or "2D") == "2D":
+            return ("Transformation Matrix",
+                    "Edit values directly  |  or use a preset below",
+                    hide, {"display": "block"}, hide)
+        return ("Transformation Matrix",
+                "Edit values directly  |  or use a preset below",
+                hide, hide, {"display": "block"})
+    return ("Equation",
+            "Use x, t for 2D  |  x, y for 3D  |  z, t for complex",
+            show_text, hide, hide)
 
 
 # Populate preset buttons based on mode
@@ -541,26 +608,56 @@ def update_presets(anim, dim):
     ]
 
 
-# Preset button click → set equation
+# Preset button click → set equation (or matrix cells for LT)
 @app.callback(
     Output("equation", "value"),
+    Output("mat-00", "value"),
+    Output("mat-01", "value"),
+    Output("mat-10", "value"),
+    Output("mat-11", "value"),
+    Output("mat3-00", "value"),
+    Output("mat3-01", "value"),
+    Output("mat3-02", "value"),
+    Output("mat3-10", "value"),
+    Output("mat3-11", "value"),
+    Output("mat3-12", "value"),
+    Output("mat3-20", "value"),
+    Output("mat3-21", "value"),
+    Output("mat3-22", "value"),
     Input({"type": "preset-btn", "index": dash.ALL}, "n_clicks"),
     State("anim-type", "value"),
     State("linear-dim", "value"),
     prevent_initial_call=True,
 )
 def apply_preset(clicks, anim, dim):
+    nu = no_update
+    nu14 = (nu,) * 14
     if not ctx.triggered_id or not any(c for c in clicks if c):
-        return no_update
+        return nu14
     idx = ctx.triggered_id["index"]
     if anim == "linear_transform":
         key = f"linear_transform_{(dim or '2D').lower()}"
     else:
         key = anim
     presets = _PRESETS.get(key, [])
-    if idx < len(presets):
-        return presets[idx]
-    return no_update
+    if idx >= len(presets):
+        return nu14
+    preset = presets[idx]
+    if anim == "linear_transform":
+        try:
+            M = _parse_matrix(preset)
+            if (dim or "2D") == "2D" and M.shape == (2, 2):
+                return (nu,
+                        float(M[0,0]), float(M[0,1]), float(M[1,0]), float(M[1,1]),
+                        nu, nu, nu, nu, nu, nu, nu, nu, nu)
+            if (dim or "2D") == "3D" and M.shape == (3, 3):
+                return (nu, nu, nu, nu, nu,
+                        float(M[0,0]), float(M[0,1]), float(M[0,2]),
+                        float(M[1,0]), float(M[1,1]), float(M[1,2]),
+                        float(M[2,0]), float(M[2,1]), float(M[2,2]))
+        except Exception:
+            return nu14
+    return (preset,) + (nu,) * 13
 
 
 # Equation validation
@@ -568,24 +665,55 @@ def apply_preset(clicks, anim, dim):
     Output("eq-status", "children"),
     Output("eq-status", "style"),
     Input("equation", "value"),
+    Input("mat-00", "value"),
+    Input("mat-01", "value"),
+    Input("mat-10", "value"),
+    Input("mat-11", "value"),
+    Input("mat3-00", "value"),
+    Input("mat3-01", "value"),
+    Input("mat3-02", "value"),
+    Input("mat3-10", "value"),
+    Input("mat3-11", "value"),
+    Input("mat3-12", "value"),
+    Input("mat3-20", "value"),
+    Input("mat3-21", "value"),
+    Input("mat3-22", "value"),
     State("anim-type", "value"),
+    State("linear-dim", "value"),
     prevent_initial_call=True,
 )
-def validate_eq(expr, anim):
+def validate_eq(expr, m00, m01, m10, m11,
+                m3_00, m3_01, m3_02, m3_10, m3_11, m3_12, m3_20, m3_21, m3_22,
+                anim, dim):
     ok_style = {"fontSize": "11px", "color": "#69db7c", "marginBottom": "12px"}
     err_style = {"fontSize": "11px", "color": "#ff6b6b", "marginBottom": "12px"}
-    if not expr:
-        return "Empty equation.", err_style
     if anim == "linear_transform":
+        if (dim or "2D") == "2D":
+            vals = [m00, m01, m10, m11]
+            if any(v is None for v in vals):
+                return "Fill all matrix cells", err_style
+            try:
+                M = np.array([[float(m00), float(m01)], [float(m10), float(m11)]])
+                det = float(np.linalg.det(M))
+                return f"Valid 2x2 matrix  |  det = {det:.3g}", ok_style
+            except Exception as e:
+                return f"Invalid matrix: {e}", err_style
+        # 3D — read from grid cells
+        vals3 = [m3_00, m3_01, m3_02, m3_10, m3_11, m3_12, m3_20, m3_21, m3_22]
+        if any(v is None for v in vals3):
+            return "Fill all matrix cells", err_style
         try:
-            M = _parse_matrix(expr)
-            r, c = M.shape
-            if r != c or r not in (2, 3):
-                return f"Need 2x2 or 3x3 matrix, got {r}x{c}", err_style
+            M = np.array([
+                [float(m3_00), float(m3_01), float(m3_02)],
+                [float(m3_10), float(m3_11), float(m3_12)],
+                [float(m3_20), float(m3_21), float(m3_22)],
+            ])
             det = float(np.linalg.det(M))
-            return f"Valid {r}x{r} matrix  |  det = {det:.3g}", ok_style
+            return f"Valid 3x3 matrix  |  det = {det:.3g}", ok_style
         except Exception as e:
             return f"Invalid matrix: {e}", err_style
+    if not expr:
+        return "Empty equation.", err_style
     vars_map = {"graph2d": {"x","t"}, "graph3d": {"x","y"}, "complex": {"z","t"}}
     err = _parser.validate(expr, variables=vars_map.get(anim, {"x","t"}))
     if err:
@@ -869,9 +997,23 @@ def tick(_, t, anim, imsmax):
     Input("zeta-b",     "value"),
     Input("linear-dim",    "value"),
     Input("vector-input",  "value"),
+    Input("mat-00", "value"),
+    Input("mat-01", "value"),
+    Input("mat-10", "value"),
+    Input("mat-11", "value"),
+    Input("mat3-00", "value"),
+    Input("mat3-01", "value"),
+    Input("mat3-02", "value"),
+    Input("mat3-10", "value"),
+    Input("mat3-11", "value"),
+    Input("mat3-12", "value"),
+    Input("mat3-20", "value"),
+    Input("mat3-21", "value"),
+    Input("mat3-22", "value"),
 )
 def update_graph(anim, eq, xr, yr, rer, imr, t, res, cmap, nz, imsmax, windtop, za, zb,
-                 lin_dim, vec_str):
+                 lin_dim, vec_str, m00, m01, m10, m11,
+                 m3_00, m3_01, m3_02, m3_10, m3_11, m3_12, m3_20, m3_21, m3_22):
     # Defaults
     eq      = eq      or "sin(x + t)"
     xr      = xr      or [-10, 10]
@@ -903,7 +1045,14 @@ def update_graph(anim, eq, xr, yr, rer, imr, t, res, cmap, nz, imsmax, windtop, 
         if anim == "riemann.point":
             return _fig_point(za, zb, res)
         if anim == "linear_transform":
-            return _fig_linear_transform(eq, t, lin_dim, vec_str), ""
+            # Compose matrix string from individual cells
+            if (lin_dim or "2D") == "2D":
+                matrix_str = f"{m00 or 0}, {m01 or 0}; {m10 or 0}, {m11 or 0}"
+            else:
+                matrix_str = (f"{m3_00 or 0}, {m3_01 or 0}, {m3_02 or 0}; "
+                              f"{m3_10 or 0}, {m3_11 or 0}, {m3_12 or 0}; "
+                              f"{m3_20 or 0}, {m3_21 or 0}, {m3_22 or 0}")
+            return _fig_linear_transform(matrix_str, t, lin_dim, vec_str), ""
     except Exception as e:
         fig = go.Figure()
         fig.update_layout(**DARK,
